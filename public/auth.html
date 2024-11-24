@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .auth-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            max-width: 100%;
+        }
+
+        .auth-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .auth-container .form-group {
+            margin-bottom: 15px;
+        }
+
+        .auth-container .form-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .auth-container .form-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .auth-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .auth-container button:hover {
+            background-color: #45a049;
+        }
+
+        .auth-container .toggle-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            cursor: pointer;
+        }
+
+        .auth-container .toggle-link:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-container" id="auth-container">
+        <!-- Register Form -->
+        <div id="register-form">
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" value="Kaushal Krishna" required>
+                </div>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" value="kaushal" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" value="@Kau93043" required>
+                </div>
+                <div class="form-group">
+                    <label for="accountType">Account Type</label>
+                    <select id="accountType" name="accountType" required>
+                        <option value="personal">Personal</option>
+                        <option value="professional">Professional</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button type="submit">Register</button>
+            </form>
+            <div class="toggle-link" onclick="toggleForm('login')">Already have an account? Login here</div>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form" style="display:none;">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" name="loginUsername" value="kaushal" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" value="@Kau93043" name="loginPassword" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <div class="toggle-link" onclick="toggleForm('register')">Don't have an account? Register here</div>
+        </div>
+
+        <div id="dashboard" style="display: none; gap: 50px;">
+            <button id="check-tokens-btn" style="width: 50%;">Check Tokens</button>
+            <button id="renew-tokens-btn" style="width: 50%;">Renew Tokens</button>
+            <button id="revoke-tokens-btn" style="width: 50%;">Revoke Tokens</button>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        // Toggle between Register and Login forms
+        function toggleForm(formType) {
+            if (formType === 'register') {
+                document.getElementById('register-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById("dashboard").style.display = 'none';
+            } else {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById("dashboard").style.display = 'none';
+            }
+        }
+
+        function openDashboard() {
+            document.getElementById("register-form").style.display = 'none';
+            document.getElementById("login-form").style.display = 'none';
+            document.getElementById("dashboard").style.display = 'flex';
+        }
+
+        // Handle Register Form Submission
+        document.getElementById('registerForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                accountType: document.getElementById('accountType').value,
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = 'Registration successful!';
+                    document.getElementById('message').style.color = 'green';
+                    setTimeout(() => {
+                        openDashboard()
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Error during registration');
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+                document.getElementById('message').style.color = 'red';
+            }
+        });
+
+        // Handle Login Form Submission
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const loginData = {
+                username: document.getElementById('loginUsername').value,
+                password: document.getElementById('loginPassword').value,
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData),
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = 'Login successful!';
+                    document.getElementById('message').style.color = 'green';
+                    setTimeout(() => {
+                        openDashboard()
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Error during login');
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+                document.getElementById('message').style.color = 'red';
+            }
+        });
+
+        document.getElementById("check-tokens-btn").addEventListener("click", async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/tokens/check', {
+                    method: 'GET',
+                    credentials:"include"
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = response.json();
+                    document.getElementById('message').style.color = 'black';
+                    setTimeout(() => {
+                        openDashboard()
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Error during checking tokens');
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+                document.getElementById('message').style.color = 'red';
+            }
+        })
+
+        document.getElementById("renew-tokens-btn").addEventListener("click", async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/tokens/renew', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: "include"
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = response.json();
+                    document.getElementById('message').style.color = 'black';
+                    setTimeout(() => {
+                        openDashboard()
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Error during renewing tokens');
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+                document.getElementById('message').style.color = 'red';
+            }
+        })
+
+        document.getElementById("revoke-tokens-btn").addEventListener("click", async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/tokens/revoke', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: "include"
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = response.json();
+                    document.getElementById('message').style.color = 'black';
+                    setTimeout(() => {
+                        openDashboard()
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Error during revoking tokens');
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+                document.getElementById('message').style.color = 'red';
+            }
+        })
+    </script>
+</body>
+
+</html>
