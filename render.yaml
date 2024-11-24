@@ -14,18 +14,18 @@ services:
       - key: PORT
         value: "8000"
       - key: AUTH_DB_URI
-        value: ""
+        value: "postgresql://flexiyodb_owner:ym6gLaUX3ucj@ep-floral-hall-a1g00tgg-pooler.ap-southeast-1.aws.neon.tech/flexiyodb?sslmode=require"
       - key: REFRESH_TOKEN_SECRET
-        value: ""
+        value: "1e2ff5ea0112c1b51e689381d69f70629cb602165424e07c81e35d9b80860173"
       - key: ACCESS_TOKEN_SECRET
-        value: ""
+        value: "9d1c1a3f03cc08a856102e12831bf98fee779760a74409f35b22099af45641d1"
       - key: SMTP_HOST
-        value: ""
+        value: "smtp-relay.brevo.com"
       - key: SMTP_EMAIL
-        value: ""
+        value: "flexiyo.norepl@outlook.com"
       - key: SMTP_USER
-        value: ""
+        value: "79825f003@smtp-brevo.com"
       - key: SMTP_PASSWORD
-        value: ""
+        value: "7wT83UCW1ZAsvpLI"
       - key: FIYOCDN_IMG_BASEURL
-        value: ""
+        value: "https://fiyocdn.github.io/img"
