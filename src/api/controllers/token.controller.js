@@ -55,6 +55,7 @@ export const checkTokens = async (req, res) => {
           secure: true,
           sameSite: "None",
           maxAge: 12 * 60 * 60 * 1000,
+          path: "/",
         });
 
         res.cookie("fiyort", newRefreshToken, {
@@ -62,6 +63,7 @@ export const checkTokens = async (req, res) => {
           secure: true,
           sameSite: "None",
           maxAge: 60 * 24 * 60 * 60 * 1000,
+          path: "/",
         });
 
         return res.status(200).json(
@@ -136,6 +138,7 @@ export const createTokens = async (userId) => {
         secure: true,
         sameSite: "None",
         maxAge: 12 * 60 * 60 * 1000,
+        path: "/",
       },
     },
     refreshTokenCookie: {
@@ -146,6 +149,7 @@ export const createTokens = async (userId) => {
         secure: true,
         sameSite: "None",
         maxAge: 60 * 24 * 60 * 60 * 1000,
+        path: "/",
       },
     },
   };
