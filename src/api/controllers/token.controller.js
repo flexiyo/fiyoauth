@@ -112,5 +112,12 @@ export const createTokens = async (userId) => {
     { expiresIn: "60d" }
   );
 
+  await sql`
+          UPDATE users
+          SET tokens = jsonb_set(tokens, '{at}', '"${newAccessToken}"', true),
+              tokens = jsonb_set(tokens, '{rt}', '"${newRefreshToken}"', true)
+          WHERE id = ${userId}
+        `;
+
   return { newAccessToken, newRefreshToken };
 };
