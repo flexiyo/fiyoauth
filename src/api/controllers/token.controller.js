@@ -5,7 +5,8 @@ import { sql } from "../../db/index.js";
 
 export const checkTokens = async (req, res) => {
   try {
-    const { fiyoat, fiyort } = req.cookies;
+    const fiyoat = req.headers["fiyoat"];
+    const fiyort = req.headers["fiyort"];
 
     if (!fiyoat || !fiyort)
       return res.status(401).json(new ApiResponse(401, null, "Tokens missing"));
@@ -50,26 +51,10 @@ export const checkTokens = async (req, res) => {
           WHERE id = ${refreshTokenPayload.userId}
         `;
 
-        res.cookie("fiyoat", newAccessToken, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "None",
-          maxAge: 12 * 60 * 60 * 1000,
-          path: "/",
-        });
-
-        res.cookie("fiyort", newRefreshToken, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "None",
-          maxAge: 60 * 24 * 60 * 60 * 1000,
-          path: "/",
-        });
-
         return res.status(200).json(
           new ApiResponse(200, "Tokens were refreshed", {
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
+            at: newAccessToken,
+            rt: newRefreshToken,
           })
         );
       }
@@ -91,7 +76,7 @@ export const checkTokens = async (req, res) => {
 
 export const revokeTokens = async (req, res) => {
   try {
-    const { fiyort } = req.cookies;
+    const fiyort = req.headers["fiyort"];
 
     if (!fiyort)
       return res
@@ -106,11 +91,9 @@ export const revokeTokens = async (req, res) => {
       WHERE id = ${payload.userId}
     `;
 
-    res.clearCookie("fiyoat").clearCookie("fiyort");
-
     return res
       .status(200)
-      .json(new ApiResponse(200, "Tokens revoked and session terminated"));
+      .json(new ApiResponse(200, "Tokens revoked successfully"));
   } catch (error) {
     throw new ApiError(401, "Failed to revoke tokens: " + error.message);
   }
@@ -129,30 +112,5 @@ export const createTokens = async (userId) => {
     { expiresIn: "60d" }
   );
 
-  const cookies = {
-    accessTokenCookie: {
-      name: "fiyoat",
-      value: newAccessToken,
-      options: {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-        maxAge: 12 * 60 * 60 * 1000,
-        path: "/",
-      },
-    },
-    refreshTokenCookie: {
-      name: "fiyort",
-      value: newRefreshToken,
-      options: {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-        maxAge: 60 * 24 * 60 * 60 * 1000,
-        path: "/",
-      },
-    },
-  };
-
-  return cookies;
+  return { newAccessToken, newRefreshToken };
 };

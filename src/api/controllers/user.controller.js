@@ -84,54 +84,33 @@ export const loginUser = async (req, res) => {
         .json(new ApiResponse(401, null, "Incorrect password."));
     }
 
-    const { accessTokenCookie, refreshTokenCookie } = await createTokens(
+    const { newAccessToken, newRefreshToken } = await createTokens(
       result[0].id
     );
 
-    res.cookie(
-      "userInfo",
-      JSON.stringify({
-        id: result[0].id,
-        fullName: result[0].full_name,
-        username: result[0].username,
-        email: result[0].email,
-        gender: result[0].gender,
-        dob: result[0].dob,
-        profession: result[0].profession,
-        bio: result[0].bio,
-        accountType: result[0].account_type,
-        isPrivate: result[0].is_private,
-        avatar: result[0].avatar,
-        banner: result[0].banner,
-        createdAt: result[0].created_at,
-      }),
-      {
-        httpOnly: false,
-        secure: true,
-        sameSite: "None",
-        maxAge: 365 * 24 * 60 * 60 * 1000,
-        path: "/",
-      }
-    );
+    const userInfo = {
+      id: result[0].id,
+      fullName: result[0].full_name,
+      username: result[0].username,
+      email: result[0].email,
+      gender: result[0].gender,
+      dob: result[0].dob,
+      profession: result[0].profession,
+      bio: result[0].bio,
+      accountType: result[0].account_type,
+      isPrivate: result[0].is_private,
+      avatar: result[0].avatar,
+      banner: result[0].banner,
+      createdAt: result[0].created_at,
+      tokens: {
+        at: newAccessToken,
+        rt: newRefreshToken,
+      },
+    };
 
-    res.cookie(
-      accessTokenCookie.name,
-      accessTokenCookie.value,
-      accessTokenCookie.options
-    );
-
-    res.cookie(
-      refreshTokenCookie.name,
-      refreshTokenCookie.value,
-      refreshTokenCookie.options
-    );
-
-    delete result[0].password;
-    delete result[0].tokens;
-    
     return res
       .status(200)
-      .json(new ApiResponse(200, result, "Login successful."));
+      .json(new ApiResponse(200, userInfo, "Login successful."));
   } catch (error) {
     throw new ApiError(500, error.message);
   }
@@ -177,13 +156,13 @@ export const registerUser = async (req, res) => {
     createdAt: Date.now(),
   };
 
-  const { accessTokenCookie, refreshTokenCookie } = await createTokens(
+  const { newAccessToken, newRefreshToken } = await createTokens(
     userInfo.id
   );
 
   userInfo.tokens = {
-    at: accessTokenCookie.value,
-    rt: refreshTokenCookie.value,
+    at: newAccessToken,
+    rt: newRefreshToken,
   };
 
   try {
@@ -211,47 +190,11 @@ export const registerUser = async (req, res) => {
       `;
     await insertQuery;
 
-    res.cookie(
-      "userInfo",
-      JSON.stringify({
-        id: userInfo.id,
-        fullName: userInfo.fullName,
-        username: userInfo.username,
-        email: userInfo.email,
-        gender: userInfo.gender,
-        dob: userInfo.dob,
-        profession: userInfo.profession,
-        bio: userInfo.bio,
-        accountType: userInfo.accountType,
-        isPrivate: userInfo.isPrivate,
-        avatar: userInfo.avatar,
-        banner: userInfo.banner,
-        createdAt: userInfo.createdAt,
-      }),
-      {
-        httpOnly: false,
-        secure: true,
-        sameSite: "None",
-        maxAge: 365 * 24 * 60 * 60 * 1000,
-        path: "/",
-      }
-    );
-
-    res.cookie(
-      accessTokenCookie.name,
-      accessTokenCookie.value,
-      accessTokenCookie.options
-    );
-
-    res.cookie(
-      refreshTokenCookie.name,
-      refreshTokenCookie.value,
-      refreshTokenCookie.options
-    );
+    delete userInfo.password;
 
     return res
       .status(200)
-      .json(new ApiResponse(200, null, "User registered successfully."));
+      .json(new ApiResponse(200, userInfo, "User registered successfully."));
   } catch (error) {
     throw new ApiError(500, error.message);
   }
@@ -279,7 +222,7 @@ export const deleteUser = async (req, res) => {
 
     const query = sql`DELETE FROM users WHERE id = ${id};`;
     await query;
-    res.clearCookie("userInfo").clearCookie("fiyoat").clearCookie("fiyort");
+
     return res
       .status(200)
       .json(new ApiResponse(200, null, "User deleted successfully."));
