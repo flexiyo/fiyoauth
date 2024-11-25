@@ -52,16 +52,16 @@ export const checkTokens = async (req, res) => {
 
         res.cookie("fiyoat", newAccessToken, {
           httpOnly: true,
-          secure: true,
-          sameSite: "None",
+          secure: false,
+          sameSite: "Lax",
           maxAge: 12 * 60 * 60 * 1000,
           path: "/",
         });
 
         res.cookie("fiyort", newRefreshToken, {
           httpOnly: true,
-          secure: true,
-          sameSite: "None",
+          secure: false,
+          sameSite: "Lax",
           maxAge: 60 * 24 * 60 * 60 * 1000,
           path: "/",
         });
@@ -136,7 +136,7 @@ export const createTokens = async (userId) => {
       options: {
         httpOnly: true,
         secure: true,
-        sameSite: "None",
+        sameSite: "Lax",
         maxAge: 12 * 60 * 60 * 1000,
         path: "/",
       },
@@ -147,7 +147,7 @@ export const createTokens = async (userId) => {
       options: {
         httpOnly: true,
         secure: true,
-        sameSite: "None",
+        sameSite: "Lax",
         maxAge: 60 * 24 * 60 * 60 * 1000,
         path: "/",
       },
