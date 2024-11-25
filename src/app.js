@@ -24,6 +24,7 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Credentials", "true");
     res.header(
       "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
     );
     res.header(
       "Access-Control-Allow-Methods",
@@ -46,9 +47,7 @@ app.use((req, res, next) => {
 
 /** API Routes */
 app.get("/api", (req, res) => {
-  res
-    .status(200)
-    .json(new ApiResponse(200, null, "Flexiyo Auth API is live"));
+  res.status(200).json(new ApiResponse(200, null, "Flexiyo Auth API is live"));
 });
 
 // Protected API routes
