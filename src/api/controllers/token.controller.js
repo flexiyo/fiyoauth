@@ -52,15 +52,15 @@ export const checkTokens = async (req, res) => {
 
         res.cookie("fiyoat", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: true,
           sameSite: "None",
           maxAge: 12 * 60 * 60 * 1000,
         });
 
         res.cookie("fiyort", newRefreshToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "Strict",
+          secure: true,
+          sameSite: "None",
           maxAge: 60 * 24 * 60 * 60 * 1000,
         });
 
@@ -133,7 +133,7 @@ export const createTokens = async (userId) => {
       value: newAccessToken,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         sameSite: "None",
         maxAge: 12 * 60 * 60 * 1000,
       },
@@ -143,8 +143,8 @@ export const createTokens = async (userId) => {
       value: newRefreshToken,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        secure: true,
+        sameSite: "None",
         maxAge: 60 * 24 * 60 * 60 * 1000,
       },
     },
