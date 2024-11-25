@@ -107,8 +107,8 @@ export const loginUser = async (req, res) => {
       }),
       {
         httpOnly: false,
-        secure: true,
-        sameSite: "Strict",
+        secure: false,
+        sameSite: "None",
       }
     );
 
@@ -228,8 +228,8 @@ export const registerUser = async (req, res) => {
       }),
       {
         httpOnly: false,
-        secure: true,
-        sameSite: "Strict",
+        secure: false,
+        sameSite: "None",
       }
     );
 
