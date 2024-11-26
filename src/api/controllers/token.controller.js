@@ -74,10 +74,10 @@ export const checkTokens = async (req, res) => {
           await sql`
       UPDATE users
       SET tokens = jsonb_set(
-                    jsonb_set(tokens, '{at}', ${JSON.stringify(
+                    jsonb_set(tokens, '{at}', ${String(
                       newAccessToken
                     )}, true),
-                    '{rt}', ${JSON.stringify(newRefreshToken)}, true
+                    '{rt}', ${String(newRefreshToken)}, true
                   )
             WHERE id = ${refreshTokenPayload.userId}
           `;
@@ -162,10 +162,10 @@ export const createTokens = async (userId) => {
     await sql`
       UPDATE users
       SET tokens = jsonb_set(
-                    jsonb_set(tokens, '{at}', ${JSON.stringify(
+                    jsonb_set(tokens, '{at}', ${String(
                       newAccessToken
                     )}, true),
-                    '{rt}', ${JSON.stringify(newRefreshToken)}, true
+                    '{rt}', ${String(newRefreshToken)}, true
                   )
       WHERE id = ${userId}
     `;
