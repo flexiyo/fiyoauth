@@ -23,7 +23,10 @@ export const checkTokens = async (req, res) => {
           .status(401)
           .json(new ApiResponse(401, null, "Refresh token expired"));
       }
-      throw new ApiError(401, "Failed to verify refresh token: " + error.message);
+      throw new ApiError(
+        401,
+        "Failed to verify refresh token: " + error.message
+      );
     }
 
     let result;
@@ -36,7 +39,13 @@ export const checkTokens = async (req, res) => {
     } catch (dbError) {
       return res
         .status(500)
-        .json(new ApiResponse(500, null, "Database query failed: " + dbError.message));
+        .json(
+          new ApiResponse(
+            500,
+            null,
+            "Database query failed: " + dbError.message
+          )
+        );
     }
 
     if (!result || result.length === 0) {
@@ -63,17 +72,25 @@ export const checkTokens = async (req, res) => {
 
         try {
           await sql`
-            UPDATE users
-            SET tokens = jsonb_set(
-                          jsonb_set(tokens, '{at}', '"${newAccessToken}"', true),
-                          '{rt}', '"${newRefreshToken}"', true
-                        )
+      UPDATE users
+      SET tokens = jsonb_set(
+                    jsonb_set(tokens, '{at}', ${JSON.stringify(
+                      newAccessToken
+                    )}, true),
+                    '{rt}', ${JSON.stringify(newRefreshToken)}, true
+                  )
             WHERE id = ${refreshTokenPayload.userId}
           `;
         } catch (dbError) {
           return res
             .status(500)
-            .json(new ApiResponse(500, null, "Failed to update tokens: " + dbError.message));
+            .json(
+              new ApiResponse(
+                500,
+                null,
+                "Failed to update tokens: " + dbError.message
+              )
+            );
         }
 
         return res.status(200).json(
@@ -97,7 +114,9 @@ export const checkTokens = async (req, res) => {
   } catch (error) {
     return res
       .status(401)
-      .json(new ApiResponse(401, null, "Token validation failed: " + error.message));
+      .json(
+        new ApiResponse(401, null, "Token validation failed: " + error.message)
+      );
   }
 };
 
@@ -139,15 +158,20 @@ export const createTokens = async (userId) => {
     { expiresIn: "60d" }
   );
 
-  await sql`
-    UPDATE users
-    SET tokens = jsonb_set(
-                  jsonb_set(tokens, '{at}', '"${newAccessToken}"', true),
-                  '{rt}', '"${newRefreshToken}"', true
-                )
-    WHERE id = ${userId}
-  `;
+  try {
+    await sql`
+      UPDATE users
+      SET tokens = jsonb_set(
+                    jsonb_set(tokens, '{at}', ${JSON.stringify(
+                      newAccessToken
+                    )}, true),
+                    '{rt}', ${JSON.stringify(newRefreshToken)}, true
+                  )
+      WHERE id = ${userId}
+    `;
+  } catch (error) {
+    throw new Error("Failed to update tokens in the database");
+  }
 
   return { newAccessToken, newRefreshToken };
 };
-

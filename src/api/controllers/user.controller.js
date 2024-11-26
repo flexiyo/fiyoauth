@@ -112,6 +112,7 @@ export const loginUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, userInfo, "Login successful."));
   } catch (error) {
+    console.error(error)
     throw new ApiError(500, error.message);
   }
 };
