@@ -1,7 +1,6 @@
 import iplocate from "node-iplocate";
 import { v4 as uuidv4 } from "uuid";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { ApiError } from "../utils/ApiError.js";
 import { sql } from "../../db/index.js";
 import { createTokens } from "../controllers/token.controller.js";
 import { validatePayload } from "../utils/validatePayload.js";
@@ -14,7 +13,7 @@ export const getAllUsers = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "Users found successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -34,7 +33,7 @@ export const getUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "User found successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -56,7 +55,7 @@ export const searchUsers = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "User found successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -113,7 +112,7 @@ export const loginUser = async (req, res) => {
       .json(new ApiResponse(200, userInfo, "Login successful."));
   } catch (error) {
     console.error(error)
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -133,7 +132,7 @@ export const registerUser = async (req, res) => {
   try {
     userIpData = await iplocate(userIP);
   } catch (error) {
-    throw new ApiResponse(500, null, error.message);
+    throw error;
   }
 
   const userInfo = {
@@ -197,7 +196,7 @@ export const registerUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, userInfo, "User registered successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -210,7 +209,7 @@ export const updateUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, null, "User updated successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
 
@@ -228,6 +227,6 @@ export const deleteUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, null, "User deleted successfully."));
   } catch (error) {
-    throw new ApiError(500, error.message);
+    throw error;
   }
 };
