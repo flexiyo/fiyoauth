@@ -13,7 +13,7 @@ export const getAllUsers = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "Users found successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in getAllUsers: ${error}`);
   }
 };
 
@@ -33,7 +33,7 @@ export const getUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "User found successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in getUser: ${error}`);
   }
 };
 
@@ -55,7 +55,7 @@ export const searchUsers = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result, "User found successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in searchUsers: ${error}`);
   }
 };
 
@@ -111,61 +111,54 @@ export const loginUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, userInfo, "Login successful."));
   } catch (error) {
-    console.error(error)
-    throw error;
+    throw new Error(`Error in loginUser: ${error}`);
   }
 };
 
 export const registerUser = async (req, res) => {
-  const requiredFields = ["username", "password", "fullName", "accountType"];
-  validatePayload(req.body, requiredFields, res);
-
-  const { username, password, fullName, accountType } = req.body;
-
-  const userIP =
-    req.headers["x-forwarded-for"] ||
-    req.headers["x-real-ip"] ||
-    req.socket.remoteAddress;
-
-  let userIpData;
-
   try {
+    const requiredFields = ["username", "password", "fullName", "accountType"];
+    validatePayload(req.body, requiredFields, res);
+
+    const { username, password, fullName, accountType } = req.body;
+
+    const userIP =
+      req.headers["x-forwarded-for"] ||
+      req.headers["x-real-ip"] ||
+      req.socket.remoteAddress;
+
+    let userIpData;
+
     userIpData = await iplocate(userIP);
-  } catch (error) {
-    throw error;
-  }
 
-  const userInfo = {
-    id: uuidv4(),
-    fullName,
-    username,
-    password,
-    origin: {
-      ip: userIP,
-      city: userIpData.city,
-      subdivision: userIpData.subdivision,
-      country: userIpData.country,
-      continent: userIpData.continent,
-      timezone: userIpData.time_zone,
-    },
-    bio: "Hi, I am new here on Flexiyo!",
-    accountType,
-    isPrivate: true,
-    avatar: "https://cdnfiyo.github.io/img/user/avatars/default-avatar.jpg",
-    banner: "https://cdnfiyo.github.io/img/user/banners/default-banner.jpg",
-    createdAt: Date.now(),
-  };
+    const userInfo = {
+      id: uuidv4(),
+      fullName,
+      username,
+      password,
+      origin: {
+        ip: userIP,
+        city: userIpData.city,
+        subdivision: userIpData.subdivision,
+        country: userIpData.country,
+        continent: userIpData.continent,
+        timezone: userIpData.time_zone,
+      },
+      bio: "Hi, I am new here on Flexiyo!",
+      accountType,
+      isPrivate: true,
+      avatar: "https://cdnfiyo.github.io/img/user/avatars/default-avatar.jpg",
+      banner: "https://cdnfiyo.github.io/img/user/banners/default-banner.jpg",
+      createdAt: Date.now(),
+    };
 
-  const { newAccessToken, newRefreshToken } = await createTokens(
-    userInfo.id
-  );
+    const { newAccessToken, newRefreshToken } = await createTokens(userInfo.id);
 
-  userInfo.tokens = {
-    at: newAccessToken,
-    rt: newRefreshToken,
-  };
+    userInfo.tokens = {
+      at: newAccessToken,
+      rt: newRefreshToken,
+    };
 
-  try {
     const userCheckQuery = sql`
         SELECT COUNT(*) FROM users WHERE username = ${username};
       `;
@@ -196,7 +189,7 @@ export const registerUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, userInfo, "User registered successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in registerUser: ${error}`);
   }
 };
 
@@ -209,7 +202,7 @@ export const updateUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, null, "User updated successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in updateUser: ${error}`);
   }
 };
 
@@ -227,6 +220,6 @@ export const deleteUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, null, "User deleted successfully."));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in deleteUser: ${error}`);
   }
 };

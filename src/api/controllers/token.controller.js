@@ -19,7 +19,6 @@ export const checkTokens = async (req, res) => {
         .status(401)
         .json(new ApiResponse(401, null, "Refresh token expired"));
     }
-    throw error;
   }
 
   const [user] = await sql`
@@ -102,7 +101,7 @@ export const revokeTokens = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, "Tokens revoked successfully"));
   } catch (error) {
-    throw error;
+    throw new Error(`Error in revokeTokens: ${error}`);
   }
 };
 
@@ -129,7 +128,7 @@ export const createTokens = async (userId) => {
       WHERE id = ${userId}
     `;
   } catch (error) {
-    throw new Error("Failed to update tokens in the database");
+    throw new Error(`Error in createTokens: ${error}`);
   }
 
   return { newAccessToken, newRefreshToken };

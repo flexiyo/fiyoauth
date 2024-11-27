@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import postgres from "postgres";
 
-dotenv.config({ path: ".env" });
+dotenv.config({ path: "./.env" });
 
 /**
  * Verifies the given access token.
@@ -14,9 +14,9 @@ dotenv.config({ path: ".env" });
  *   verification, the message, and the user id associated with the token.
  */
 export const checkAccessToken = async (accessToken) => {
+  try {
     const sql = postgres(process.env.AUTH_DB_URI);
 
-  try {
     if (!accessToken) {
       return { status: 401, message: "Access token is required" };
     }
@@ -66,10 +66,7 @@ export const checkAccessToken = async (accessToken) => {
       },
     };
   } catch (error) {
-    return {
-      status: 401,
-      message: "Access token verification failed: " + error.message,
-    };
+    throw new Error(`Error in checkAccessToken: ${error}`);
   } finally {
     await sql.end();
   }
