@@ -134,7 +134,11 @@ export const registerUser = async (req, res) => {
 
     let userIpData;
 
-    userIpData = await iplocate(userIP);
+    try {
+      userIpData = await iplocate(userIP);
+    } catch (error) {
+      throw new Error(`Error in iplocate: ${error}`);
+    }
 
     const userInfo = {
       id: uuidv4(),
