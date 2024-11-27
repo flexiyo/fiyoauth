@@ -20,8 +20,9 @@ export const getAllUsers = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const username = req.params.username;
-    const query = sql`SELECT * FROM users WHERE username = ${username};`;
-    const result = await query;
+    const result = await sql`
+      SELECT * FROM users WHERE username = ${username}
+    `;
 
     if (!result || result.length === 0) {
       return res
@@ -29,9 +30,12 @@ export const getUser = async (req, res) => {
         .json(new ApiResponse(404, null, `User '${username}' not found.`));
     }
 
+    delete result[0].password;
+    delete result[0].tokens;
+
     return res
       .status(200)
-      .json(new ApiResponse(200, result, "User found successfully."));
+      .json(new ApiResponse(200, result[0], "User found successfully."));
   } catch (error) {
     throw new Error(`Error in getUser: ${error}`);
   }
@@ -39,9 +43,9 @@ export const getUser = async (req, res) => {
 
 export const searchUsers = async (req, res) => {
   try {
-    const query = sql`SELECT * FROM users WHERE username LIKE ${`%${req.params.query}%`} OR full_name LIKE ${`%${req.params.query}%`};`;
-
-    const result = await query;
+    const result = await sql`
+      SELECT * FROM users WHERE username LIKE ${`%${req.params.query}%`} OR full_name LIKE ${`%${req.params.query}%`}
+    `;
 
     if (!result || result.length === 0) {
       return res
@@ -105,6 +109,7 @@ export const loginUser = async (req, res) => {
         at: newAccessToken,
         rt: newRefreshToken,
       },
+      rooms: result[0].rooms,
     };
 
     return res
