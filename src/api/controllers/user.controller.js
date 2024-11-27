@@ -128,11 +128,9 @@ export const registerUser = async (req, res) => {
     const { username, password, fullName, accountType } = req.body;
 
     const userIP =
-      req.headers["x-forwarded-for"] ||
+      req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
       req.headers["x-real-ip"] ||
       req.socket.remoteAddress;
-
-      console.log(userIP)
 
     let userIpData;
 
