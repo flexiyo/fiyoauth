@@ -17,17 +17,17 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-export const getUser = async (req, res) => {
+export const getUserById = async (req, res) => {
   try {
-    const username = req.params.username;
+    const userId = req.params.userId;
     const result = await sql`
-      SELECT * FROM users WHERE username = ${username}
+      SELECT * FROM users WHERE id = ${userId};
     `;
 
     if (!result || result.length === 0) {
       return res
         .status(404)
-        .json(new ApiResponse(404, null, `User '${username}' not found.`));
+        .json(new ApiResponse(404, null, `User '${userId}' not found.`));
     }
 
     delete result[0].password;
@@ -37,7 +37,7 @@ export const getUser = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, result[0], "User found successfully."));
   } catch (error) {
-    throw new Error(`Error in getUser: ${error}`);
+    throw new Error(`Error in getUserById: ${error}`);
   }
 };
 

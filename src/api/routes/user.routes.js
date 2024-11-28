@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   getAllUsers,
-  getUser,
+  getUserById,
   searchUsers,
   loginUser,
   registerUser,
@@ -13,7 +13,7 @@ import {
 const userRouter = Router();
 
 userRouter.get("/", asyncHandler(getAllUsers));
-userRouter.get("/get/:username", asyncHandler(getUser));
+userRouter.get("/get/:userId", asyncHandler(getUserById));
 userRouter.get("/search/:query", asyncHandler(searchUsers));
 userRouter.post("/login", asyncHandler(loginUser));
 userRouter.post("/register", asyncHandler(registerUser));
