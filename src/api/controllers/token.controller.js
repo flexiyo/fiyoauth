@@ -73,10 +73,14 @@ export const checkTokens = async (req, res) => {
   `;
 
   return res.status(200).json(
-    new ApiResponse(200, "Tokens were refreshed", {
-      at: newAccessToken,
-      rt: newRefreshToken,
-    })
+    new ApiResponse(
+      200,
+      {
+        at: newAccessToken,
+        rt: newRefreshToken,
+      },
+      "Tokens were refreshed"
+    )
   );
 };
 
@@ -99,7 +103,7 @@ export const revokeTokens = async (req, res) => {
 
     return res
       .status(200)
-      .json(new ApiResponse(200, "Tokens revoked successfully"));
+      .json(new ApiResponse(200, null, "Tokens revoked successfully"));
   } catch (error) {
     throw new Error(`Error in revokeTokens: ${error}`);
   }
