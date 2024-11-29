@@ -21,7 +21,7 @@ export const getUserById = async (req, res) => {
   try {
     const userId = req.params.userId;
     const result = await sql`
-      SELECT (id, username, name, avatar) FROM users WHERE id = ${userId};
+      SELECT (id, username, full_name, avatar) FROM users WHERE id = ${userId};
     `;
 
     if (!result || result.length === 0) {
