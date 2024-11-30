@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   getAllUsers,
   getUserById,
+  getBulkUsers,
   searchUsers,
   loginUser,
   registerUser,
@@ -14,6 +15,7 @@ const userRouter = Router();
 
 userRouter.get("/", asyncHandler(getAllUsers));
 userRouter.get("/get/:userId", asyncHandler(getUserById));
+userRouter.get("/get/bulk", asyncHandler(getBulkUsers));
 userRouter.get("/search/:query", asyncHandler(searchUsers));
 userRouter.post("/login", asyncHandler(loginUser));
 userRouter.post("/register", asyncHandler(registerUser));
