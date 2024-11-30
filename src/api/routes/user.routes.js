@@ -15,7 +15,7 @@ const userRouter = Router();
 
 userRouter.get("/", asyncHandler(getAllUsers));
 userRouter.get("/get/:userId", asyncHandler(getUserById));
-userRouter.get("/bulk", asyncHandler(getBulkUsers));
+userRouter.post("/bulk", asyncHandler(getBulkUsers));
 userRouter.get("/search/:query", asyncHandler(searchUsers));
 userRouter.post("/login", asyncHandler(loginUser));
 userRouter.post("/register", asyncHandler(registerUser));
