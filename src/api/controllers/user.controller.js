@@ -7,8 +7,8 @@ import { validatePayload } from "../utils/validatePayload.js";
 
 export const getAllUsers = async (req, res) => {
   try {
-    const query = sql`SELECT * FROM users;`;
-    const result = await query;
+    const result =
+      await sql`SELECT id, username, full_name, avatar FROM users;`;
     return res
       .status(200)
       .json(new ApiResponse(200, result, "Users found successfully."));
@@ -168,10 +168,9 @@ export const registerUser = async (req, res) => {
       rt: newRefreshToken,
     };
 
-    const userCheckQuery = sql`
+    const userCheckResult = await sql`
         SELECT COUNT(*) FROM users WHERE username = ${username};
       `;
-    const userCheckResult = await userCheckQuery;
 
     if (parseInt(userCheckResult[0].count) > 0) {
       return res
@@ -179,7 +178,7 @@ export const registerUser = async (req, res) => {
         .json({ message: "Username has already been taken." });
     }
 
-    const insertQuery = sql`
+    await sql`
         INSERT INTO users (
           id, full_name, username, password, origin, bio,
           account_type, is_private, avatar, banner, created_at, tokens
@@ -190,7 +189,6 @@ export const registerUser = async (req, res) => {
           ${userInfo.tokens}
         )
       `;
-    await insertQuery;
 
     delete userInfo.password;
 
@@ -205,8 +203,7 @@ export const registerUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id, ...data } = req.body;
-    const query = sql`UPDATE users SET ${sql(data)} WHERE id = ${id};`;
-    await query;
+    await sql`UPDATE users SET ${sql(data)} WHERE id = ${id};`;
     return res
       .status(200)
       .json(new ApiResponse(200, null, "User updated successfully."));
@@ -222,8 +219,7 @@ export const deleteUser = async (req, res) => {
 
     const { id } = req.body;
 
-    const query = sql`DELETE FROM users WHERE id = ${id};`;
-    await query;
+    await sql`DELETE FROM users WHERE id = ${id};`;
 
     return res
       .status(200)
