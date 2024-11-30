@@ -41,6 +41,7 @@ export const getUserById = async (req, res) => {
 export const getBulkUsers = async (req, res) => {
   try {
     const userIds = req.body.userIds;
+    console.log(userIds)
     const result = await sql`
       SELECT id, username, full_name, avatar FROM users WHERE id = ANY(${userIds});
     `;
