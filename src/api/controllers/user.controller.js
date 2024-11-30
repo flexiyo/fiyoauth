@@ -30,14 +30,32 @@ export const getUserById = async (req, res) => {
         .json(new ApiResponse(404, null, `User '${userId}' not found.`));
     }
 
-    delete result[0].password;
-    delete result[0].tokens;
-
     return res
       .status(200)
       .json(new ApiResponse(200, result[0], "User found successfully."));
   } catch (error) {
     throw new Error(`Error in getUserById: ${error}`);
+  }
+};
+
+export const getBulkUsers = async (req, res) => {
+  try {
+    const userIds = req.body.userIds;
+    const result = await sql`
+      SELECT id, username, full_name, avatar FROM users WHERE id = ANY(${userIds});
+    `;
+
+    if (!result || result.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Users not found."));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, result, "Users found successfully."));
+  } catch (error) {
+    throw new Error(`Error in getBulkUsers: ${error}`);
   }
 };
 
