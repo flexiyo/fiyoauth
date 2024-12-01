@@ -89,10 +89,11 @@ export const loginUser = async (req, res) => {
     const { username, password } = req.body;
 
     const result = await sql`
-      SELECT id, full_name, username, password, email, gender, dob, profession, bio, account_type, is_private, avatar, banner, created_at
+      SELECT id, full_name, username, password, email, gender, dob, profession, bio, account_type, is_private, avatar, banner, created_at, tokens
       FROM users
       WHERE username = ${username}
     `;
+
     if (!result || result.length === 0) {
       return res
         .status(404)
@@ -105,9 +106,39 @@ export const loginUser = async (req, res) => {
         .json(new ApiResponse(401, null, "Incorrect password."));
     }
 
-    const { newAccessToken, newRefreshToken } = await createTokens(
-      result[0].id
-    );
+    const tokens = result[0].tokens || {};
+    let refreshToken = tokens.rt;
+    let accessToken;
+
+    const isRefreshTokenValid = (() => {
+      if (!refreshToken) return false;
+      try {
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    })();
+
+    if (!isRefreshTokenValid) {
+      const { newRefreshToken, newAccessToken } = await createTokens(result[0].id);
+      refreshToken = newRefreshToken;
+      accessToken = newAccessToken;
+    } else {
+      const { newAccessToken } = await createTokens(result[0].id);
+      accessToken = newAccessToken;
+    }
+
+    const updatedTokens = {
+      rt: refreshToken,
+      at: accessToken,
+    };
+
+    await sql`
+      UPDATE users
+      SET tokens = ${updatedTokens}::jsonb
+      WHERE id = ${result[0].id}
+    `;
 
     const userInfo = {
       id: result[0].id,
@@ -123,12 +154,10 @@ export const loginUser = async (req, res) => {
       avatar: result[0].avatar,
       banner: result[0].banner,
       createdAt: result[0].created_at,
-      tokens: {
-        at: newAccessToken,
-        rt: newRefreshToken,
-      },
-      rooms: result[0].rooms,
+      tokens: updatedTokens,
     };
+
+    delete userInfo.password;
 
     return res
       .status(200)
@@ -246,3 +275,4 @@ export const deleteUser = async (req, res) => {
     throw new Error(`Error in deleteUser: ${error}`);
   }
 };
+
