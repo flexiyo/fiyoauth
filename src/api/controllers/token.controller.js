@@ -6,82 +6,101 @@ export const checkTokens = async (req, res) => {
   const fiyoat = req.headers["fiyoat"];
   const fiyort = req.headers["fiyort"];
 
-  if (!fiyoat || !fiyort) {
-    return res.status(401).json(new ApiResponse(401, null, "Tokens missing"));
-  }
+  if (!fiyoat || !fiyort)
+    return res
+      .status(401)
+      .json(
+        new ApiResponse(401, { errorName: "RTInvalidError" }, "Tokens missing")
+      );
 
   let refreshTokenPayload;
   try {
     refreshTokenPayload = jwt.verify(fiyort, process.env.REFRESH_TOKEN_SECRET);
   } catch (error) {
-    if (error.name === "TokenExpiredError") {
+    if (error.name === "TokenExpiredError")
       return res
         .status(401)
-        .json(new ApiResponse(401, null, "Refresh token expired"));
-    }
+        .json(
+          new ApiResponse(
+            401,
+            { errorName: "RTInvalidError" },
+            "Refresh token expired"
+          )
+        );
+    return res
+      .status(401)
+      .json(
+        new ApiResponse(
+          401,
+          { errorName: "RTInvalidError" },
+          "Invalid refresh token"
+        )
+      );
   }
 
   const [user] = await sql`
-    SELECT tokens
-    FROM users
-    WHERE id = ${refreshTokenPayload.userId} AND tokens->>'rt' = ${fiyort}
+    SELECT tokens FROM users WHERE id = ${refreshTokenPayload.userId} AND (tokens->>'rt' = ${fiyort} OR tokens->>'rt' IS NULL)
   `;
 
-  if (!user) {
+  if (!user)
     return res
       .status(401)
-      .json(new ApiResponse(401, null, "Invalid or expired refresh token"));
-  }
+      .json(
+        new ApiResponse(
+          401,
+          { errorName: "RTInvalidError" },
+          "Invalid or expired refresh token"
+        )
+      );
+
+  const tokens = user.tokens || {};
+  if (!tokens.rt || !fiyoat)
+    return res
+      .status(401)
+      .json(
+        new ApiResponse(
+          401,
+          { errorName: "RTInvalidError" },
+          "Tokens missing or invalid"
+        )
+      );
 
   try {
-    const accessTokenPayload = jwt.verify(
-      fiyoat,
-      process.env.ACCESS_TOKEN_SECRET
-    );
-    return res.status(200).json(
-      new ApiResponse(200, "Tokens are valid", {
-        accessTokenPayload,
-        refreshTokenPayload,
-      })
-    );
+    jwt.verify(fiyoat, process.env.ACCESS_TOKEN_SECRET);
   } catch (error) {
-    if (error.name !== "TokenExpiredError") {
+    if (error.name === "TokenExpiredError") {
+      const { newAccessToken, newRefreshToken } = await createTokens(
+        refreshTokenPayload.userId
+      );
+      await sql`
+        UPDATE users SET tokens = ${JSON.stringify({
+          at: newAccessToken,
+          rt: newRefreshToken,
+        })}::jsonb
+        WHERE id = ${refreshTokenPayload.userId}
+      `;
       return res
-        .status(401)
-        .json(new ApiResponse(401, null, "Invalid access token"));
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { at: newAccessToken, rt: newRefreshToken },
+            "Tokens were refreshed"
+          )
+        );
     }
+    return res
+      .status(401)
+      .json(
+        new ApiResponse(
+          401,
+          { errorName: "ATInvalidError" },
+          "Invalid access token"
+        )
+      );
   }
 
-  const newAccessToken = jwt.sign(
-    { userId: refreshTokenPayload.userId },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "12h" }
-  );
-  const newRefreshToken = jwt.sign(
-    { userId: refreshTokenPayload.userId },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "60d" }
-  );
-
-  await sql`
-    UPDATE users
-    SET tokens = jsonb_set(
-                  jsonb_set(tokens, '{at}', ${newAccessToken}, true),
-                  '{rt}', ${newRefreshToken}, true
-                )
-    WHERE id = ${refreshTokenPayload.userId}
-  `;
-
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        at: newAccessToken,
-        rt: newRefreshToken,
-      },
-      "Tokens were refreshed"
-    )
-  );
+  return res.status(200).json(new ApiResponse(200, "Tokens are valid"));
 };
 
 export const revokeTokens = async (req, res) => {
@@ -91,7 +110,13 @@ export const revokeTokens = async (req, res) => {
     if (!fiyort)
       return res
         .status(401)
-        .json(new ApiResponse(401, null, "Refresh token is missing"));
+        .json(
+          new ApiResponse(
+            401,
+            { errorName: "RTInvalidError" },
+            "Refresh token is missing"
+          )
+        );
 
     const payload = jwt.verify(fiyort, process.env.REFRESH_TOKEN_SECRET);
 
@@ -121,19 +146,6 @@ export const createTokens = async (userId) => {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "60d" }
   );
-
-  try {
-    await sql`
-      UPDATE users
-      SET tokens = jsonb_set(
-                    jsonb_set(tokens, '{at}', ${newAccessToken}, true),
-                    '{rt}', ${newRefreshToken}, true
-                  )
-      WHERE id = ${userId}
-    `;
-  } catch (error) {
-    throw new Error(`Error in createTokens: ${error}`);
-  }
 
   return { newAccessToken, newRefreshToken };
 };
