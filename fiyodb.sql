@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.6
+-- Dumped from database version 16.3
 -- Dumped by pg_dump version 16.4 (Ubuntu 16.4-0ubuntu0.24.04.2)
 
 SET statement_timeout = 0;
@@ -30,6 +30,28 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: chat_rooms; Type: TABLE; Schema: public; Owner: kaushal
+--
+
+CREATE TABLE public.chat_rooms (
+    id text NOT NULL,
+    name text,
+    type text NOT NULL,
+    theme text DEFAULT 'default'::text,
+    avatar text,
+    members jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chat_rooms_type_check CHECK ((type = ANY (ARRAY['private'::text, 'group'::text, 'broadcast'::text])))
+);
+
+
+ALTER TABLE public.chat_rooms OWNER TO kaushal;
+
 --
 -- Name: clip_comments_id_seq; Type: SEQUENCE; Schema: public; Owner: kaushal
 --
@@ -44,10 +66,6 @@ CREATE SEQUENCE public.clip_comments_id_seq
 
 
 ALTER SEQUENCE public.clip_comments_id_seq OWNER TO kaushal;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: clip_comments; Type: TABLE; Schema: public; Owner: kaushal
@@ -292,6 +310,14 @@ ALTER TABLE ONLY public.user_inventory ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: chat_rooms chat_rooms_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
+--
+
+ALTER TABLE ONLY public.chat_rooms
+    ADD CONSTRAINT chat_rooms_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: clip_comments clip_comments_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
 --
 
@@ -478,6 +504,7 @@ ALTER TABLE ONLY public.post_comments
 
 ALTER TABLE ONLY public.post_likes
     ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES public.users(id);
+
 
 --
 -- PostgreSQL database dump complete
