@@ -17,7 +17,7 @@ const allowedOrigins = ["capacitor://localhost", "http://localhost:3000", "https
 
 /** CORS Middleware */
 app.use((req, res, next) => {
-  console.log(req)
+  console.log(req.headers)
   const origin = req.headers.origin;
   const isApiRoute = req.path.startsWith("/api/v1");
   
