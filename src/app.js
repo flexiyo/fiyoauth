@@ -23,6 +23,8 @@ app.use((req, res, next) => {
   const origin = req.headers.origin || req.headers["App-Origin"];
   const isApiRoute = req.path.startsWith("/api/v1");
 
+  console.log(req.headers["App-Origin"])
+
   if (isApiRoute && allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Credentials", "true");
