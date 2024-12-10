@@ -13,14 +13,12 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
 
 /** List of allowed origins */
-const allowedOrigins = ["http://localhost", "http://localhost:3000", "https://flexiyo.web.app"];
+const allowedOrigins = ["flexiyo://fiyo", "http://localhost:3000", "https://flexiyo.web.app"];
 
 /** CORS Middleware */
 app.use((req, res, next) => {
   const origin = req.get("Origin");
   const isApiRoute = req.path.startsWith("/api/v1");
-  
-  console.log(origin)
   
   if (isApiRoute && allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
