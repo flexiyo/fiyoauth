@@ -11,16 +11,18 @@ app.use(cookieParser());
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
-
 /** List of allowed origins */
-const allowedOrigins = ["capacitor://localhost", "http://localhost:3000", "https://flexiyo.web.app"];
+const allowedOrigins = [
+  "flexiyo://fiyo",
+  "http://localhost:3000",
+  "https://flexiyo.web.app",
+];
 
 /** CORS Middleware */
 app.use((req, res, next) => {
-  console.log(req.headers)
-  const origin = req.headers.origin;
+  const origin = req.headers.origin || req.headers["App-Origin"];
   const isApiRoute = req.path.startsWith("/api/v1");
-  
+
   if (isApiRoute && allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Credentials", "true");
