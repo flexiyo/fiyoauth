@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fiyoauth
+    env: node
+    region: oregon
+    buildCommand: "npm install"
+    startCommand: "node src/index.js"
+    plan: free
+    autoDeploy: true
+    healthCheckPath: "/api"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8000"
