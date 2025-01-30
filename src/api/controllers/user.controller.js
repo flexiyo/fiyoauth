@@ -26,9 +26,22 @@ const getAllUsers = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const result = await sql`
-      SELECT id, username, full_name, bio, followers_count, following_count, avatar, banner
-      FROM users WHERE username = ${req.params.username} LIMIT 1;
-    `;
+  SELECT 
+    u.id, 
+    u.username, 
+    u.full_name, 
+    u.bio, 
+    u.avatar, 
+    u.banner,
+    COALESCE(COUNT(DISTINCT f1.follower_id), 0) AS followers_count,
+    COALESCE(COUNT(DISTINCT f2.following_id), 0) AS following_count
+  FROM users u
+  LEFT JOIN followers f1 ON f1.following_id = u.id
+  LEFT JOIN followers f2 ON f2.follower_id = u.id
+  WHERE u.username = ${req.params.username}
+  GROUP BY u.id
+  LIMIT 1;
+`;
 
     if (!result.length) {
       return res
