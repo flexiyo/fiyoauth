@@ -20,7 +20,7 @@ const getUserFollowers = async (req, res) => {
       FROM followers f
       JOIN users u ON u.id = f.follower_id
       WHERE f.following_id = (SELECT id FROM users WHERE username = ${req.params.username})
-        AND f.status = 'accepted'
+        AND f.following_status = 'accepted'
       LIMIT 20;
     `;
 
@@ -72,7 +72,7 @@ const getUserFollowing = async (req, res) => {
       FROM followers f
       JOIN users u ON u.id = f.following_id
       WHERE f.follower_id = (SELECT id FROM users WHERE username = ${req.params.username})
-        AND f.status = 'accepted'
+        AND f.following_status = 'accepted'
       LIMIT 20;
     `;
 
@@ -113,7 +113,7 @@ const getPendingFollowRequests = async (req, res) => {
       SELECT f.follower_id, u.username, u.avatar
       FROM followers f
       JOIN users u ON f.follower_id = u.id
-      WHERE f.following_id = ${req.user.id} AND f.status = 'pending'
+      WHERE f.following_id = ${req.user.id} AND f.following_status = 'pending'
     `;
 
     if (result.length === 0) {
@@ -161,7 +161,7 @@ const sendFollowRequest = async (req, res) => {
       }
 
       await tx`
-          INSERT INTO followers (follower_id, following_id, status)
+          INSERT INTO followers (follower_id, following_id, following_status)
           VALUES (${req.user.id}, ${req.body.following_id}, 'pending')
         `;
 
@@ -183,7 +183,7 @@ const acceptFollowRequest = async (req, res) => {
       const followRequest = await tx`
         SELECT 1
         FROM followers
-        WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND status = 'pending'
+        WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND following_status = 'pending'
       `;
 
       if (followRequest.length === 0) {
@@ -199,7 +199,7 @@ const acceptFollowRequest = async (req, res) => {
       }
       await tx`
       UPDATE followers
-      SET status = 'accepted'
+      SET following_status = 'accepted'
       WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id}
     `;
 
@@ -223,7 +223,7 @@ const rejectFollowRequest = async (req, res) => {
       const followRequest = await tx`
           SELECT 1
           FROM followers
-          WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND status = 'pending'
+          WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND following_status = 'pending'
         `;
 
       if (followRequest.length === 0) {
@@ -263,7 +263,7 @@ const getUserMates = async (req, res) => {
         FROM mates m
         JOIN users u ON u.id = m.mate_id
         WHERE (m.initiator_id = ${req.user.id} OR m.mate_id = ${req.user.id})
-        AND m.status = 'accepted'
+        AND m.mate_status = 'accepted'
         LIMIT 20;
       `;
 
@@ -297,7 +297,7 @@ const getPendingMateRequests = async (req, res) => {
         SELECT m.initiator_id, u.username, u.avatar
         FROM mates m
         JOIN users u ON m.initiator_id = u.id
-        WHERE m.mate_id = ${req.user.id} AND m.status = 'pending'
+        WHERE m.mate_id = ${req.user.id} AND m.mate_status = 'pending'
       `;
 
     if (result.length === 0) {
@@ -346,7 +346,7 @@ const sendMateRequest = async (req, res) => {
       }
 
       await tx`
-          INSERT INTO mates (initiator_id, mate_id, status)
+          INSERT INTO mates (initiator_id, mate_id, mate_status)
           VALUES (${req.user.id}, ${req.body.mate_id}, 'pending')
         `;
 
@@ -368,7 +368,7 @@ const acceptMateRequest = async (req, res) => {
       const mateRequest = await tx`
           SELECT 1
           FROM mates
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND status = 'pending'
+          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND mate_status = 'pending'
         `;
 
       if (mateRequest.length === 0) {
@@ -385,7 +385,7 @@ const acceptMateRequest = async (req, res) => {
 
       await tx`
           UPDATE mates
-          SET status = 'accepted'
+          SET mate_status = 'accepted'
           WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id}
         `;
 
@@ -409,7 +409,7 @@ const rejectMateRequest = async (req, res) => {
       const mateRequest = await tx`
           SELECT 1
           FROM mates
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND status = 'pending'
+          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND mate_status = 'pending'
         `;
 
       if (mateRequest.length === 0) {

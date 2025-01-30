@@ -42,9 +42,51 @@ const getUserProfile = async (req, res) => {
         );
     }
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, result[0], "User found successfully."));
+    const [row] = await sql`
+  SELECT 
+    f.follower_id, f.following_id, f.following_status, f.followed_back,
+    m.initiator_id, m.mate_id, m.mate_status
+  FROM followers f
+  LEFT JOIN mates m 
+    ON (m.initiator_id = ${req.user.id} AND m.mate_id = ${result[0].id}) 
+    OR (m.initiator_id = ${result[0].id} AND m.mate_id = ${req.user.id})
+  WHERE (f.follower_id = ${req.user.id} AND f.following_id = ${result[0].id})
+     OR (f.follower_id = ${result[0].id} AND f.following_id = ${req.user.id})
+  LIMIT 1;
+`;
+
+    let relation = {};
+
+    if (row) {
+      const isFollowing = row.follower_id === req.user.id;
+      const isFollowed = row.following_id === req.user.id;
+
+      relation = {
+        follow: {
+          is_following: isFollowing
+            ? row.following_status === "accepted"
+            : row.followed_back,
+          is_followed: isFollowed
+            ? row.following_status === "accepted"
+            : row.followed_back,
+          following_status: isFollowing ? row.following_status : null,
+        },
+        mate: {
+          mate_status: row.mate_status || null,
+        },
+      };
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          ...result[0],
+          relation,
+        },
+        "User found successfully."
+      )
+    );
   } catch (error) {
     return ApiError(res, error, "Error in getUserProfile.");
   }
@@ -187,7 +229,7 @@ const registerUser = async (req, res) => {
     }
 
     const id = uuidv4();
-    const hashedPassword = await bcrypt.hash(password, 20);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     await sql`
       INSERT INTO users (id, full_name, username, password, origin, account_type)
