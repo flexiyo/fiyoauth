@@ -5,11 +5,13 @@ import {
   getUserFollowing,
   getPendingFollowRequests,
   sendFollowRequest,
+  unsendFollowRequest,
   acceptFollowRequest,
   rejectFollowRequest,
   getUserMates,
   getPendingMateRequests,
   sendMateRequest,
+  unsendMateRequest,
   acceptMateRequest,
   rejectMateRequest,
 } from "../controllers/connection.controller.js";
@@ -37,6 +39,10 @@ connectionRouter.post(
   asyncHandler(sendFollowRequest, true)
 );
 connectionRouter.post(
+  "/unsend/follow_request",
+  asyncHandler(unsendFollowRequest, true)
+);
+connectionRouter.post(
   "/accept/follow_request",
   asyncHandler(acceptFollowRequest, true)
 );
@@ -57,6 +63,10 @@ connectionRouter.get(
 connectionRouter.post(
   "/send/mate_request",
   asyncHandler(sendMateRequest, true)
+);
+connectionRouter.post(
+  "/unsend/mate_request",
+  asyncHandler(unsendMateRequest, true)
 );
 connectionRouter.post(
   "/accept/mate_request",

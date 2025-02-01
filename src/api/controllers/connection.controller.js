@@ -174,6 +174,43 @@ const sendFollowRequest = async (req, res) => {
   }
 };
 
+const unsendFollowRequest = async (req, res) => {
+  try {
+    const requiredFields = ["following_id"];
+    validatePayload(req.body, requiredFields, res);
+
+    await sql.begin(async (tx) => {
+      const followRequest = await tx`
+          SELECT 1
+          FROM followers
+          WHERE follower_id = ${req.user.id} AND following_id = ${req.body.following_id} AND following_status = 'pending'
+        `;
+
+      if (followRequest.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ApiResponse(
+              404,
+              null,
+              "Follow request not found or already accepted/rejected."
+            )
+          );
+      }
+      await tx`
+        DELETE FROM followers
+        WHERE follower_id = ${req.user.id} AND following_id = ${req.body.following_id}
+      `;
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Follow request undo successfully."));
+    });
+  } catch (error) {
+    return ApiError(res, error, "Error in unsendFollowRequest.");
+  }
+};
+
 const acceptFollowRequest = async (req, res) => {
   try {
     const requiredFields = ["follower_id"];
@@ -359,6 +396,44 @@ const sendMateRequest = async (req, res) => {
   }
 };
 
+const unsendMateRequest = async (req, res) => {
+  try {
+    const requiredFields = ["mate_id"];
+    validatePayload(req.body, requiredFields, res);
+
+    await sql.begin(async (tx) => {
+      const mateRequest = await tx`
+          SELECT 1
+          FROM mates
+          WHERE initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id} AND mate_status = 'pending'
+        `;
+
+      if (mateRequest.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ApiResponse(
+              404,
+              null,
+              "Mate request not found or already accepted/rejected."
+            )
+          );
+      }
+
+      await tx`
+          DELETE FROM mates
+          WHERE initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id}
+        `;
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Mate request undo successfully."));
+    });
+  } catch (error) {
+    return ApiError(res, error, "Error in unsendMateRequest.");
+  }
+};
+
 const acceptMateRequest = async (req, res) => {
   try {
     const requiredFields = ["initiator_id"];
@@ -445,11 +520,13 @@ export {
   getUserFollowing,
   getPendingFollowRequests,
   sendFollowRequest,
+  unsendFollowRequest,
   acceptFollowRequest,
   rejectFollowRequest,
   getUserMates,
   getPendingMateRequests,
   sendMateRequest,
+  unsendMateRequest,
   acceptMateRequest,
   rejectMateRequest,
 };
