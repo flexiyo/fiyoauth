@@ -14,10 +14,10 @@ const getUserFollowers = async (req, res) => {
     SELECT 
       u.id, u.username, u.avatar,
       EXISTS (
-        SELECT 1 FROM followers 
+        SELECT follow_status FROM followers 
         WHERE following_id = ${req.user.id} 
           AND follower_id = u.id
-      ) AS is_following
+      ) AS follow_status
     FROM users u
     WHERE u.id IN (
       SELECT follower_id FROM followers WHERE following_id = ${req.params.id}
@@ -32,9 +32,9 @@ const getUserFollowers = async (req, res) => {
     }
 
     const formattedResult = result.map(
-      ({ id, username, avatar, is_following }) => ({
+      ({ id, username, avatar, follow_status }) => ({
         user: { id, username, avatar },
-        relation: { is_following },
+        relation: { follow_status },
       })
     );
 
@@ -66,7 +66,7 @@ const getUserFollowing = async (req, res) => {
           SELECT 1 FROM followers 
           WHERE follower_id = ${req.user.id} 
             AND following_id = u.id
-        ) AS is_following
+        ) AS follow_status
       FROM users u
       WHERE u.id IN (
         SELECT following_id FROM followers WHERE follower_id = ${req.params.id}
@@ -81,9 +81,9 @@ const getUserFollowing = async (req, res) => {
     }
 
     const formattedResult = result.map(
-      ({ id, username, avatar, is_following }) => ({
+      ({ id, username, avatar, follow_status }) => ({
         user: { id, username, avatar },
-        relation: { is_following },
+        relation: { follow_status },
       })
     );
 
@@ -291,7 +291,7 @@ const getUserMates = async (req, res) => {
     `;
 
     if (!result.length) {
-      return res.status(404).json(new ApiResponse(404, [], "No mates found."));
+      return res.status(404).json(new ApiResponse(404, [], "Mates not found."));
     }
 
     const formattedResult = result.map(({ user_id, username, avatar }) => ({
