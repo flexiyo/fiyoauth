@@ -11,7 +11,7 @@ The `followers` table tracks the relationships between users in the system, spec
 CREATE TABLE followers (
   follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'pending',
+  follow_status TEXT DEFAULT 'pending',
   followed_back BOOLEAN DEFAULT false,
   accepted_at TIMESTAMP DEFAULT NULL,
   PRIMARY KEY (follower_id, following_id),
@@ -33,7 +33,7 @@ CREATE TABLE followers (
 - **Foreign Key**: References the `id` field in the `users` table.
 - **Constraints**: This column cannot be `NULL`.
 
-### 3. `status`
+### 3. `follow_status`
 - **Type**: `TEXT`
 - **Description**: Indicates the current status of the follow request.
   - `pending`: The follow request has been sent but not yet accepted.
@@ -79,10 +79,10 @@ If the following relationship is deleted, the row will be removed automatically.
 
 ### Sending a Follow Request
 
-To send a follow request, insert a row into the `followers` table with `status = 'pending'`:
+To send a follow request, insert a row into the `followers` table with `follow_status = 'pending'`:
 
 ```sql
-INSERT INTO followers (follower_id, following_id, status)
+INSERT INTO followers (follower_id, following_id, follow_status)
 VALUES ('follower_uuid', 'following_uuid', 'pending');
 ```
 
@@ -92,7 +92,7 @@ When the recipient accepts the follow request, update the status to `accepted`:
 
 ```sql
 UPDATE followers
-SET status = 'accepted'
+SET follow_status = 'accepted'
 WHERE follower_id = 'follower_uuid' AND following_id = 'following_uuid';
 ```
 

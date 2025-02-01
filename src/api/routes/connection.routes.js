@@ -21,11 +21,11 @@ const connectionRouter = Router();
 /** Followers */
 // Lists
 connectionRouter.get(
-  "/followers/:username",
+  "/followers",
   asyncHandler(getUserFollowers, true)
 );
 connectionRouter.get(
-  "/following/:username",
+  "/following",
   asyncHandler(getUserFollowing, true)
 );
 connectionRouter.get(

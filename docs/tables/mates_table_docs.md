@@ -11,7 +11,7 @@ The `mates` table handles the one-to-one relationship between users in the syste
 CREATE TABLE mates (
   initiator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   mate_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'pending',
+  mate_status TEXT DEFAULT 'pending',
   accepted_at TIMESTAMP DEFAULT NULL,
   PRIMARY KEY (initiator_id, mate_id),
   CONSTRAINT mate_ids_not_equal CHECK (initiator_id != mate_id)
@@ -32,7 +32,7 @@ CREATE TABLE mates (
 - **Foreign Key**: References the `id` field in the `users` table.
 - **Constraints**: This column cannot be `NULL`.
 
-### 3. `status`
+### 3. `mate_status`
 - **Type**: `TEXT`
 - **Description**: Indicates the current status of the mate request.
   - `pending`: The request has been sent but not yet accepted or rejected.
@@ -73,10 +73,10 @@ If the mates relationship is deleted, the row will be removed automatically. If 
 
 ### Sending a Mate Request
 
-To send a mate request, insert a row into the `mates` table with `status = 'pending'`:
+To send a mate request, insert a row into the `mates` table with `mate_status = 'pending'`:
 
 ```sql
-INSERT INTO mates (initiator_id, mate_id, status)
+INSERT INTO mates (initiator_id, mate_id, mate_status)
 VALUES ('initiator_uuid', 'mate_uuid', 'pending');
 ```
 
@@ -86,7 +86,7 @@ When the recipient accepts the request, update the status to `accepted`:
 
 ```sql
 UPDATE mates
-SET status = 'accepted'
+SET mate_status = 'accepted'
 WHERE initiator_id = 'initiator_uuid' AND mate_id = 'mate_uuid';
 ```
 

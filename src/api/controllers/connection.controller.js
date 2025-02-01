@@ -5,41 +5,47 @@ import { validatePayload } from "../utils/validatePayload.js";
 
 const getUserFollowers = async (req, res) => {
   try {
-    const requiredFields = ["username"];
-    validatePayload(req.params, requiredFields, res);
+    const { id, limit = 20, offset = 0 } = req.body;
+
+    const requiredFields = ["id"];
+    validatePayload(req.body, requiredFields, res);
 
     const result = await sql`
-      SELECT 
-        f.follower_id AS user_id,
-        u.username,
-        u.avatar,
-        CASE 
-          WHEN f.follower_id = ${req.user.id} THEN true
-          ELSE false
-        END AS is_following
-      FROM followers f
-      JOIN users u ON u.id = f.follower_id
-      WHERE f.following_id = (SELECT id FROM users WHERE username = ${req.params.username})
-        AND f.following_status = 'accepted'
-      LIMIT 20;
-    `;
-
-    if (result.length === 0) {
+    SELECT 
+      u.id,
+      u.username,
+      u.avatar,
+      EXISTS (
+        SELECT 1 FROM followers 
+        WHERE following_id = ${req.user.id} 
+          AND follower_id = u.id
+      ) 
+      OR EXISTS (
+        SELECT 1 FROM followers 
+        WHERE following_id = u.id 
+          AND follower_id = ${req.user.id} 
+          AND followed_back = true
+      ) AS is_following
+    FROM users u
+    WHERE u.id IN (
+      SELECT follower_id FROM followers WHERE following_id = ${id}
+      UNION
+      SELECT following_id FROM followers WHERE follower_id = ${id} AND followed_back = true
+    )
+    LIMIT ${limit} OFFSET ${offset};
+  `;
+    if (!result.length) {
       return res
         .status(404)
-        .json(new ApiResponse(404, null, "Followers not found."));
+        .json(new ApiResponse(404, [], "No followers found."));
     }
 
-    const formattedResult = result.map((row) => ({
-      user: {
-        id: row.user_id,
-        username: row.username,
-        avatar: row.avatar,
-      },
-      relation: {
-        is_following: row.is_following,
-      },
-    }));
+    const formattedResult = result.map(
+      ({ id, username, avatar, is_following }) => ({
+        user: { id, username, avatar },
+        relation: { is_following },
+      })
+    );
 
     return res
       .status(200)
@@ -57,41 +63,48 @@ const getUserFollowers = async (req, res) => {
 
 const getUserFollowing = async (req, res) => {
   try {
-    const requiredFields = ["username"];
-    validatePayload(req.params, requiredFields, res);
+    const { id, limit = 20, offset = 0 } = req.body;
+
+    const requiredFields = ["id"];
+    validatePayload(req.body, requiredFields, res);
 
     const result = await sql`
       SELECT 
-        f.following_id AS user_id,
+        u.id,
         u.username,
         u.avatar,
-        CASE 
-          WHEN f.following_id = ${req.user.id} THEN true
-          ELSE false
-        END AS is_following
-      FROM followers f
-      JOIN users u ON u.id = f.following_id
-      WHERE f.follower_id = (SELECT id FROM users WHERE username = ${req.params.username})
-        AND f.following_status = 'accepted'
-      LIMIT 20;
+        EXISTS (
+          SELECT 1 FROM followers 
+          WHERE follower_id = ${req.user.id} 
+            AND following_id = u.id
+        ) 
+        OR EXISTS (
+          SELECT 1 FROM followers 
+          WHERE follower_id = u.id 
+            AND following_id = ${req.user.id} 
+            AND followed_back = true
+        ) AS is_following
+      FROM users u
+      WHERE u.id IN (
+        SELECT following_id FROM followers WHERE follower_id = ${id}
+        UNION
+        SELECT follower_id FROM followers WHERE following_id = ${id} AND followed_back = true
+      )
+      LIMIT ${limit} OFFSET ${offset};
     `;
 
-    if (result.length === 0) {
+    if (!result.length) {
       return res
         .status(404)
-        .json(new ApiResponse(404, null, "Following users not found."));
+        .json(new ApiResponse(404, [], "Following users not found."));
     }
 
-    const formattedResult = result.map((row) => ({
-      user: {
-        id: row.user_id,
-        username: row.username,
-        avatar: row.avatar,
-      },
-      relation: {
-        is_following: row.is_following,
-      },
-    }));
+    const formattedResult = result.map(
+      ({ id, username, avatar, is_following }) => ({
+        user: { id, username, avatar },
+        relation: { is_following },
+      })
+    );
 
     return res
       .status(200)
@@ -292,30 +305,30 @@ const rejectFollowRequest = async (req, res) => {
 
 const getUserMates = async (req, res) => {
   try {
-    const result = await sql`
-        SELECT 
-          m.initiator_id AS user_id,
-          u.username,
-          u.avatar
-        FROM mates m
-        JOIN users u ON u.id = m.mate_id
-        WHERE (m.initiator_id = ${req.user.id} OR m.mate_id = ${req.user.id})
-        AND m.mate_status = 'accepted'
-        LIMIT 20;
-      `;
+    const { limit = 20, offset = 0 } = req.body;
 
-    if (result.length === 0) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "Mates not found."));
+    const result = await sql`
+      SELECT 
+        u.id,
+        u.username,
+        u.avatar
+      FROM mates m
+      JOIN users u ON u.id = 
+        CASE 
+          WHEN m.initiator_id = ${req.user.id} THEN m.mate_id
+          ELSE m.initiator_id
+        END
+      WHERE (m.initiator_id = ${req.user.id} OR m.mate_id = ${req.user.id})
+        AND m.mate_status = 'accepted'
+      LIMIT ${limit} OFFSET ${offset};
+    `;
+
+    if (!result.length) {
+      return res.status(404).json(new ApiResponse(404, [], "No mates found."));
     }
 
-    const formattedResult = result.map((row) => ({
-      user: {
-        id: row.user_id,
-        username: row.username,
-        avatar: row.avatar,
-      },
+    const formattedResult = result.map(({ user_id, username, avatar }) => ({
+      user: { id, username, avatar },
     }));
 
     return res
