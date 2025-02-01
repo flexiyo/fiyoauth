@@ -5,10 +5,10 @@ import { validatePayload } from "../utils/validatePayload.js";
 
 const getUserFollowers = async (req, res) => {
   try {
-    const { id, limit = 20, offset = 0 } = req.body;
-
     const requiredFields = ["id"];
     validatePayload(req.body, requiredFields, res);
+
+    const { limit = 20, offset = 0 } = req.query;
 
     const result = await sql`
     SELECT 
@@ -28,9 +28,9 @@ const getUserFollowers = async (req, res) => {
       ) AS is_following
     FROM users u
     WHERE u.id IN (
-      SELECT follower_id FROM followers WHERE following_id = ${id}
+      SELECT follower_id FROM followers WHERE following_id = ${req.params.id}
       UNION
-      SELECT following_id FROM followers WHERE follower_id = ${id} AND followed_back = true
+      SELECT following_id FROM followers WHERE follower_id = ${req.params.id} AND followed_back = true
     )
     LIMIT ${limit} OFFSET ${offset};
   `;
@@ -63,10 +63,10 @@ const getUserFollowers = async (req, res) => {
 
 const getUserFollowing = async (req, res) => {
   try {
-    const { id, limit = 20, offset = 0 } = req.body;
-
     const requiredFields = ["id"];
-    validatePayload(req.body, requiredFields, res);
+    validatePayload(req.params, requiredFields, res);
+
+    const { limit = 20, offset = 0 } = req.query;
 
     const result = await sql`
       SELECT 
@@ -86,9 +86,9 @@ const getUserFollowing = async (req, res) => {
         ) AS is_following
       FROM users u
       WHERE u.id IN (
-        SELECT following_id FROM followers WHERE follower_id = ${id}
+        SELECT following_id FROM followers WHERE follower_id = ${req.params.id}
         UNION
-        SELECT follower_id FROM followers WHERE following_id = ${id} AND followed_back = true
+        SELECT follower_id FROM followers WHERE following_id = ${req.params.id} AND followed_back = true
       )
       LIMIT ${limit} OFFSET ${offset};
     `;
