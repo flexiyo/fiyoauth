@@ -139,8 +139,7 @@ CREATE TABLE public.clips (
 CREATE TABLE public.followers (
     follower_id uuid NOT NULL,
     following_id uuid NOT NULL,
-    status text DEFAULT 'pending'::text,
-    followed_back boolean DEFAULT false,
+    follow_status text DEFAULT 'pending'::text,
     accepted_at timestamp without time zone,
     CONSTRAINT follow_ids_not_equal CHECK ((follower_id <> following_id))
 );
@@ -153,7 +152,7 @@ CREATE TABLE public.followers (
 CREATE TABLE public.mates (
     initiator_id uuid NOT NULL,
     mate_id uuid NOT NULL,
-    status text DEFAULT 'pending'::text,
+    mate_status text DEFAULT 'pending'::text,
     accepted_at timestamp without time zone,
     CONSTRAINT mate_ids_not_equal CHECK ((initiator_id <> mate_id))
 );
@@ -266,8 +265,6 @@ CREATE TABLE public.users (
     avatar character varying(400) DEFAULT 'https://cdnfiyo.github.io/img/user/avatars/default-avatar.jpg'::character varying,
     banner character varying(500) DEFAULT 'https://cdnfiyo.github.io/img/user/banners/default-banner.jpg'::character varying,
     rooms jsonb,
-    followers_count integer DEFAULT 0,
-    following_count integer DEFAULT 0,
     bio jsonb DEFAULT '{"text": "", "links": [], "track": {}}'::jsonb,
     created_at timestamp(6) without time zone DEFAULT now()
 );
