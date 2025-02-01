@@ -34,10 +34,12 @@ const getUserProfile = async (req, res) => {
     u.avatar, 
     u.banner,
     COALESCE(COUNT(DISTINCT f1.follower_id), 0) AS followers_count,
-    COALESCE(COUNT(DISTINCT f2.following_id), 0) AS following_count
+    COALESCE(COUNT(DISTINCT f2.following_id), 0) AS following_count,
+    COALESCE(COUNT(DISTINCT p.user_id), 0) AS posts_count,
   FROM users u
   LEFT JOIN followers f1 ON f1.following_id = u.id
   LEFT JOIN followers f2 ON f2.follower_id = u.id
+  LEFT JOIN posts p ON p.user_id = u.id
   WHERE u.username = ${req.params.username}
   GROUP BY u.id
   LIMIT 1;
