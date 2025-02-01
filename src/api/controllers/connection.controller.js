@@ -6,7 +6,7 @@ import { validatePayload } from "../utils/validatePayload.js";
 const getUserFollowers = async (req, res) => {
   try {
     const requiredFields = ["id"];
-    validatePayload(req.body, requiredFields, res);
+    validatePayload(req.params, requiredFields, res);
 
     const { limit = 20, offset = 0 } = req.query;
 
