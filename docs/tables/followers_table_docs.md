@@ -1,4 +1,3 @@
-
 # Followers Table Documentation
 
 ## Overview
@@ -12,7 +11,6 @@ CREATE TABLE followers (
   follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   follow_status TEXT DEFAULT 'pending',
-  followed_back BOOLEAN DEFAULT false,
   accepted_at TIMESTAMP DEFAULT NULL,
   PRIMARY KEY (follower_id, following_id),
   CONSTRAINT follow_ids_not_equal CHECK (follower_id != following_id)
@@ -22,30 +20,29 @@ CREATE TABLE followers (
 ## Columns
 
 ### 1. `follower_id`
+
 - **Type**: `UUID`
 - **Description**: The ID of the user who is following another user.
 - **Foreign Key**: References the `id` field in the `users` table.
 - **Constraints**: This column cannot be `NULL`.
 
 ### 2. `following_id`
+
 - **Type**: `UUID`
 - **Description**: The ID of the user who is being followed.
 - **Foreign Key**: References the `id` field in the `users` table.
 - **Constraints**: This column cannot be `NULL`.
 
 ### 3. `follow_status`
+
 - **Type**: `TEXT`
 - **Description**: Indicates the current status of the follow request.
   - `pending`: The follow request has been sent but not yet accepted.
   - `accepted`: The follow request has been accepted by the recipient.
 - **Default**: `pending`
 
-### 4. `followed_back`
-- **Type**: `BOOLEAN`
-- **Description**: Indicates whether the follower has followed back the user.
-- **Default**: `false`
-
 ### 5. `accepted_at`
+
 - **Type**: `TIMESTAMP`
 - **Description**: Timestamp of when the following_id (user being followed) accepted the follow request. Defaults to `NULL`.
 - **Default**: `NULL`
@@ -65,6 +62,7 @@ Both `follower_id` and `following_id` are foreign keys referencing the `users(id
 ## Constraints
 
 ### 1. `follow_ids_not_equal`
+
 This constraint ensures that a user cannot follow themselves.
 
 ```sql
@@ -96,15 +94,7 @@ SET follow_status = 'accepted'
 WHERE follower_id = 'follower_uuid' AND following_id = 'following_uuid';
 ```
 
-### Reversing the Follow Back
-
-To mark the follow back (when the recipient follows back), update the `followed_back` field:
-
-```sql
-UPDATE followers
-SET followed_back = true
-WHERE follower_id = 'follower_uuid' AND following_id = 'following_uuid';
-```
+````
 
 ### Deleting a Follow Relationship
 
@@ -113,6 +103,6 @@ To delete a follow relationship (if rejected or removed), delete the row from th
 ```sql
 DELETE FROM followers
 WHERE follower_id = 'follower_uuid' AND following_id = 'following_uuid';
-```
+````
 
 ---

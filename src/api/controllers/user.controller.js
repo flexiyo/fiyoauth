@@ -22,28 +22,27 @@ const getAllUsers = async (req, res) => {
     return ApiError(res, error, "Error in getAllUsers.");
   }
 };
-
 const getUserProfile = async (req, res) => {
   try {
     const result = await sql`
-  SELECT 
-    u.id, 
-    u.username, 
-    u.full_name, 
-    u.bio, 
-    u.avatar, 
-    u.banner,
-    COALESCE(COUNT(DISTINCT f1.follower_id), 0) AS followers_count,
-    COALESCE(COUNT(DISTINCT f2.following_id), 0) AS following_count,
-    COALESCE(COUNT(DISTINCT p.user_id), 0) AS posts_count
-  FROM users u
-  LEFT JOIN followers f1 ON f1.following_id = u.id
-  LEFT JOIN followers f2 ON f2.follower_id = u.id
-  LEFT JOIN posts p ON p.user_id = u.id
-  WHERE u.username = ${req.params.username}
-  GROUP BY u.id
-  LIMIT 1;
-`;
+      SELECT 
+        u.id, 
+        u.username, 
+        u.full_name, 
+        u.bio, 
+        u.avatar, 
+        u.banner,
+        COALESCE(COUNT(DISTINCT f1.follower_id), 0) AS followers_count,
+        COALESCE(COUNT(DISTINCT f2.following_id), 0) AS following_count,
+        COALESCE(COUNT(DISTINCT p.user_id), 0) AS posts_count
+      FROM users u
+      LEFT JOIN followers f1 ON f1.following_id = u.id
+      LEFT JOIN followers f2 ON f2.follower_id = u.id
+      LEFT JOIN posts p ON p.user_id = u.id
+      WHERE u.username = ${req.params.username}
+      GROUP BY u.id
+      LIMIT 1;
+    `;
 
     if (!result.length) {
       return res
@@ -56,35 +55,30 @@ const getUserProfile = async (req, res) => {
           )
         );
     }
-  
+
     const [row] = await sql`
-  SELECT 
-    f.follower_id, f.following_id, f.following_status, f.followed_back,
-    m.initiator_id, m.mate_id, m.mate_status
-  FROM followers f
-  LEFT JOIN mates m 
-    ON (m.initiator_id = ${req.user.id} AND m.mate_id = ${result[0].id}) 
-    OR (m.initiator_id = ${result[0].id} AND m.mate_id = ${req.user.id})
-  WHERE (f.follower_id = ${req.user.id} AND f.following_id = ${result[0].id})
-     OR (f.follower_id = ${result[0].id} AND f.following_id = ${req.user.id})
-  LIMIT 1;
-`;
+      SELECT 
+        f.follower_id, f.following_id, f.following_status, 
+        m.initiator_id, m.mate_id, m.mate_status
+      FROM followers f
+      LEFT JOIN mates m 
+        ON (m.initiator_id = ${req.user.id} AND m.mate_id = ${result[0].id}) 
+        OR (m.initiator_id = ${result[0].id} AND m.mate_id = ${req.user.id})
+      WHERE (f.follower_id = ${req.user.id} AND f.following_id = ${result[0].id})
+         OR (f.follower_id = ${result[0].id} AND f.following_id = ${req.user.id})
+      LIMIT 1;
+    `;
 
     let relation = {};
 
     if (row) {
-      const isFollowing = row.follower_id === req.user.id;
-      const isFollowed = row.following_id === req.user.id;
-
       relation = {
         follow: {
-          is_following: isFollowing
-            ? row.following_status === "accepted"
-            : row.followed_back,
-          is_followed: isFollowed
-            ? row.following_status === "accepted"
-            : row.followed_back,
-          following_status: isFollowing ? row.following_status : null,
+          following_status:
+            row.follower_id === req.user.id ? row.following_status : null,
+          is_followed:
+            row.following_id === req.user.id &&
+            row.following_status === "accepted",
         },
         mate: {
           mate_status: row.mate_status || null,

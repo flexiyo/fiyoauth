@@ -12,32 +12,23 @@ const getUserFollowers = async (req, res) => {
 
     const result = await sql`
     SELECT 
-      u.id,
-      u.username,
-      u.avatar,
+      u.id, u.username, u.avatar,
       EXISTS (
         SELECT 1 FROM followers 
         WHERE following_id = ${req.user.id} 
           AND follower_id = u.id
-      ) 
-      OR EXISTS (
-        SELECT 1 FROM followers 
-        WHERE following_id = u.id 
-          AND follower_id = ${req.user.id} 
-          AND followed_back = true
       ) AS is_following
     FROM users u
     WHERE u.id IN (
       SELECT follower_id FROM followers WHERE following_id = ${req.params.id}
-      UNION
-      SELECT following_id FROM followers WHERE follower_id = ${req.params.id} AND followed_back = true
     )
     LIMIT ${limit} OFFSET ${offset};
   `;
+
     if (!result.length) {
       return res
         .status(404)
-        .json(new ApiResponse(404, [], "No followers found."));
+        .json(new ApiResponse(404, [], "Followers not found."));
     }
 
     const formattedResult = result.map(
@@ -70,25 +61,15 @@ const getUserFollowing = async (req, res) => {
 
     const result = await sql`
       SELECT 
-        u.id,
-        u.username,
-        u.avatar,
+        u.id, u.username, u.avatar,
         EXISTS (
           SELECT 1 FROM followers 
           WHERE follower_id = ${req.user.id} 
             AND following_id = u.id
-        ) 
-        OR EXISTS (
-          SELECT 1 FROM followers 
-          WHERE follower_id = u.id 
-            AND following_id = ${req.user.id} 
-            AND followed_back = true
         ) AS is_following
       FROM users u
       WHERE u.id IN (
         SELECT following_id FROM followers WHERE follower_id = ${req.params.id}
-        UNION
-        SELECT follower_id FROM followers WHERE following_id = ${req.params.id} AND followed_back = true
       )
       LIMIT ${limit} OFFSET ${offset};
     `;
@@ -126,7 +107,7 @@ const getPendingFollowRequests = async (req, res) => {
       SELECT f.follower_id, u.username, u.avatar
       FROM followers f
       JOIN users u ON f.follower_id = u.id
-      WHERE f.following_id = ${req.user.id} AND f.following_status = 'pending'
+      WHERE f.following_id = ${req.user.id} AND f.follow_status = 'pending'
     `;
 
     if (result.length === 0) {
@@ -154,34 +135,32 @@ const sendFollowRequest = async (req, res) => {
     const requiredFields = ["following_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const existingFollow = await tx`
-          SELECT 1
-          FROM followers
-          WHERE follower_id = ${req.user.id} AND following_id = ${req.body.following_id}
-        `;
+    const result = await sql`
+      INSERT INTO followers (follower_id, following_id, follow_status)
+      SELECT ${req.user.id}, ${req.body.following_id}, 'pending'
+      WHERE NOT EXISTS (
+        SELECT 1 FROM followers 
+        WHERE follower_id = ${req.user.id} 
+          AND following_id = ${req.body.following_id}
+      )
+      RETURNING *;
+    `;
 
-      if (existingFollow.length > 0) {
-        return res
-          .status(400)
-          .json(
-            new ApiResponse(
-              400,
-              null,
-              "You have already sent a follow request to this user or you already follow this user."
-            )
-          );
-      }
-
-      await tx`
-          INSERT INTO followers (follower_id, following_id, following_status)
-          VALUES (${req.user.id}, ${req.body.following_id}, 'pending')
-        `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
-        .json(new ApiResponse(200, null, "Follow request sent successfully."));
-    });
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            null,
+            "You have already sent a follow request to this user or you already follow this user."
+          )
+        );
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Follow request sent successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in sendFollowRequest.");
   }
@@ -192,33 +171,29 @@ const unsendFollowRequest = async (req, res) => {
     const requiredFields = ["following_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const followRequest = await tx`
-          SELECT 1
-          FROM followers
-          WHERE follower_id = ${req.user.id} AND following_id = ${req.body.following_id} AND following_status = 'pending'
-        `;
+    const result = await sql`
+      DELETE FROM followers
+      WHERE follower_id = ${req.user.id} 
+        AND following_id = ${req.body.following_id} 
+        AND follow_status = 'pending'
+      RETURNING *;
+    `;
 
-      if (followRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Follow request not found or already accepted/rejected."
-            )
-          );
-      }
-      await tx`
-        DELETE FROM followers
-        WHERE follower_id = ${req.user.id} AND following_id = ${req.body.following_id}
-      `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
-        .json(new ApiResponse(200, null, "Follow request undo successfully."));
-    });
+        .status(404)
+        .json(
+          new ApiResponse(
+            404,
+            null,
+            "Follow request not found or already accepted/rejected."
+          )
+        );
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Follow request undone successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in unsendFollowRequest.");
   }
@@ -229,36 +204,32 @@ const acceptFollowRequest = async (req, res) => {
     const requiredFields = ["follower_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const followRequest = await tx`
-        SELECT 1
-        FROM followers
-        WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND following_status = 'pending'
-      `;
-
-      if (followRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Follow request not found or already accepted/rejected."
-            )
-          );
-      }
-      await tx`
+    const result = await sql`
       UPDATE followers
-      SET following_status = 'accepted'
-      WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id}
+      SET follow_status = 'accepted'
+      WHERE follower_id = ${req.body.follower_id} 
+        AND following_id = ${req.user.id} 
+        AND follow_status = 'pending'
+      RETURNING *;
     `;
 
+    if (result.length === 0) {
       return res
-        .status(200)
+        .status(404)
         .json(
-          new ApiResponse(200, null, "Follow request accepted successfully.")
+          new ApiResponse(
+            404,
+            null,
+            "Follow request not found or already accepted/rejected."
+          )
         );
-    });
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, null, "Follow request accepted successfully.")
+      );
   } catch (error) {
     return ApiError(res, error, "Error in acceptFollowRequest.");
   }
@@ -269,35 +240,31 @@ const rejectFollowRequest = async (req, res) => {
     const requiredFields = ["follower_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const followRequest = await tx`
-          SELECT 1
-          FROM followers
-          WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id} AND following_status = 'pending'
-        `;
+    const result = await sql`
+      DELETE FROM followers
+      WHERE follower_id = ${req.body.follower_id} 
+        AND following_id = ${req.user.id} 
+        AND follow_status = 'pending'
+      RETURNING *;
+    `;
 
-      if (followRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Follow request not found or already accepted/rejected."
-            )
-          );
-      }
-      await tx`
-        DELETE FROM followers
-        WHERE follower_id = ${req.body.follower_id} AND following_id = ${req.user.id}
-      `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
+        .status(404)
         .json(
-          new ApiResponse(200, null, "Follow request rejected successfully.")
+          new ApiResponse(
+            404,
+            null,
+            "Follow request not found or already accepted/rejected."
+          )
         );
-    });
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, null, "Follow request rejected successfully.")
+      );
   } catch (error) {
     return ApiError(res, error, "Error in rejectFollowRequest.");
   }
@@ -375,35 +342,32 @@ const sendMateRequest = async (req, res) => {
     const requiredFields = ["mate_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const existingMateRequest = await tx`
-          SELECT 1
-          FROM mates
-          WHERE initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id}
-             OR initiator_id = ${req.body.mate_id} AND mate_id = ${req.user.id}
-        `;
+    const result = await sql`
+      INSERT INTO mates (initiator_id, mate_id, mate_status)
+      SELECT ${req.user.id}, ${req.body.mate_id}, 'pending'
+      WHERE NOT EXISTS (
+        SELECT 1 FROM mates 
+        WHERE (initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id})
+           OR (initiator_id = ${req.body.mate_id} AND mate_id = ${req.user.id})
+      )
+      RETURNING *;
+    `;
 
-      if (existingMateRequest.length > 0) {
-        return res
-          .status(400)
-          .json(
-            new ApiResponse(
-              400,
-              null,
-              "You have already sent a mate request to this user or you both are already mates."
-            )
-          );
-      }
-
-      await tx`
-          INSERT INTO mates (initiator_id, mate_id, mate_status)
-          VALUES (${req.user.id}, ${req.body.mate_id}, 'pending')
-        `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
-        .json(new ApiResponse(200, null, "Mate request sent successfully."));
-    });
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            null,
+            "You have already sent a mate request to this user or you both are already mates."
+          )
+        );
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Mate request sent successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in sendMateRequest.");
   }
@@ -414,34 +378,29 @@ const unsendMateRequest = async (req, res) => {
     const requiredFields = ["mate_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const mateRequest = await tx`
-          SELECT 1
-          FROM mates
-          WHERE initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id} AND mate_status = 'pending'
-        `;
+    const result = await sql`
+      DELETE FROM mates
+      WHERE initiator_id = ${req.user.id} 
+        AND mate_id = ${req.body.mate_id} 
+        AND mate_status = 'pending'
+      RETURNING *;
+    `;
 
-      if (mateRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Mate request not found or already accepted/rejected."
-            )
-          );
-      }
-
-      await tx`
-          DELETE FROM mates
-          WHERE initiator_id = ${req.user.id} AND mate_id = ${req.body.mate_id}
-        `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
-        .json(new ApiResponse(200, null, "Mate request undo successfully."));
-    });
+        .status(404)
+        .json(
+          new ApiResponse(
+            404,
+            null,
+            "Mate request not found or already accepted/rejected."
+          )
+        );
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Mate request undone successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in unsendMateRequest.");
   }
@@ -452,37 +411,30 @@ const acceptMateRequest = async (req, res) => {
     const requiredFields = ["initiator_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const mateRequest = await tx`
-          SELECT 1
-          FROM mates
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND mate_status = 'pending'
-        `;
+    const result = await sql`
+      UPDATE mates
+      SET mate_status = 'accepted'
+      WHERE initiator_id = ${req.body.initiator_id} 
+        AND mate_id = ${req.user.id} 
+        AND mate_status = 'pending'
+      RETURNING *;
+    `;
 
-      if (mateRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Mate request not found or already accepted/rejected."
-            )
-          );
-      }
-
-      await tx`
-          UPDATE mates
-          SET mate_status = 'accepted'
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id}
-        `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
+        .status(404)
         .json(
-          new ApiResponse(200, null, "Mate request accepted successfully.")
+          new ApiResponse(
+            404,
+            null,
+            "Mate request not found or already accepted/rejected."
+          )
         );
-    });
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Mate request accepted successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in acceptMateRequest.");
   }
@@ -493,36 +445,29 @@ const rejectMateRequest = async (req, res) => {
     const requiredFields = ["initiator_id"];
     validatePayload(req.body, requiredFields, res);
 
-    await sql.begin(async (tx) => {
-      const mateRequest = await tx`
-          SELECT 1
-          FROM mates
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id} AND mate_status = 'pending'
-        `;
+    const result = await sql`
+      DELETE FROM mates
+      WHERE initiator_id = ${req.body.initiator_id} 
+        AND mate_id = ${req.user.id} 
+        AND mate_status = 'pending'
+      RETURNING *;
+    `;
 
-      if (mateRequest.length === 0) {
-        return res
-          .status(404)
-          .json(
-            new ApiResponse(
-              404,
-              null,
-              "Mate request not found or already accepted/rejected."
-            )
-          );
-      }
-
-      await tx`
-          DELETE FROM mates
-          WHERE initiator_id = ${req.body.initiator_id} AND mate_id = ${req.user.id}
-        `;
-
+    if (result.length === 0) {
       return res
-        .status(200)
+        .status(404)
         .json(
-          new ApiResponse(200, null, "Mate request rejected successfully.")
+          new ApiResponse(
+            404,
+            null,
+            "Mate request not found or already accepted/rejected."
+          )
         );
-    });
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Mate request rejected successfully."));
   } catch (error) {
     return ApiError(res, error, "Error in rejectMateRequest.");
   }
