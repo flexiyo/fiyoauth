@@ -18,17 +18,5 @@ const connectDB = async () => {
   return sql;
 };
 
-export const checkDBHealth = async () => {
-  try {
-    const db = await connectDB();
-    await db`SELECT 1;`;
-    console.log("Database is healthy");
-    return true;
-  } catch (error) {
-    console.error("Database health check failed:", error.message);
-    return false;
-  }
-};
-
 export { sql };
 export default connectDB;

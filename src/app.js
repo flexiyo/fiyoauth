@@ -1,8 +1,8 @@
 import express from "express";
-import { ApiResponse } from "./api/utils/ApiResponse.js";
-import userRouter from "./api/routes/user.routes.js";
-import tokenRouter from "./api/routes/token.routes.js";
-import connectionRouter from "./api/routes/connection.routes.js";
+import { ApiResponse } from "./utils/ApiResponse.js";
+import userRouter from "./routes/user.routes.js";
+import tokenRouter from "./routes/token.routes.js";
+import connectionRouter from "./routes/connection.routes.js";
 
 /** Configurations */
 const app = express();
