@@ -1,6 +1,6 @@
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { sql } from "../../db/index.js";
+import { sql } from "../db/index.js";
 import { validatePayload } from "../utils/validatePayload.js";
 
 const getUserFollowers = async (req, res) => {

@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import iplocate from "node-iplocate";
 import { v4 as uuidv4 } from "uuid";
-import { sql } from "../../db/index.js";
+import { sql } from "../db/index.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import {

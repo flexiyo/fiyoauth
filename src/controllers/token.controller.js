@@ -1,7 +1,7 @@
-import { sql } from "../../db/index.js";
+import { sql } from "../db/index.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { checkAccessToken } from "../../package/checkAccessToken.js";
+import { checkAccessToken } from "../package/checkAccessToken.js";
 import { createAccessToken } from "../utils/tokenHandler.js";
 
 export const checkTokens = async (req, res) => {

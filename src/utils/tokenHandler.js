@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
 import path from "path";
-import { sql } from "../../db/index.js";
+import { sql } from "../db/index.js";
 
 // Load RSA keys
 const PRIVATE_KEY = readFileSync(

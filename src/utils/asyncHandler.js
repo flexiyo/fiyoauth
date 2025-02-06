@@ -1,4 +1,4 @@
-import { checkAccessToken } from "../../package/checkAccessToken.js";
+import { checkAccessToken } from "../package/checkAccessToken.js";
 import { ApiResponse } from "./ApiResponse.js";
 
 const asyncHandler = (requestHandler, checkAccessTokenFlag = false) => {
