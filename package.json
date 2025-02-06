@@ -13,7 +13,7 @@
       "api",
       "auth"
    ],
-   "author": "The KryptonLab Team",
+   "author": "Kaushal Krishna",
    "license": "ISC",
    "dependencies": {
       "bcrypt": "^5.1.1",
