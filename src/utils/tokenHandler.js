@@ -14,7 +14,7 @@ const PRIVATE_KEY = readFileSync(
  * 🆕 Create a New Refresh Token (Stored in DB)
  */
 export async function createRefreshToken({ user_id, device_id, device_name }) {
-  const refresh_token = randomBytes(64).toString("hex");
+  const refresh_token = randomBytes(128).toString("hex");
 
   await sql`
         INSERT INTO tokens (device_id, user_id, refresh_token, device_name, last_used, created_at)
@@ -41,7 +41,7 @@ export async function createAccessToken({ refresh_token, device_id }) {
     { user_id: result[0].user_id, device_id },
     PRIVATE_KEY,
     {
-      algorithm: "RS256",
+      algorithm: "RS128",
       expiresIn: "30m",
     }
   );
