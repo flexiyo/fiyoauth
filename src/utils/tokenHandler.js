@@ -41,7 +41,7 @@ export async function createAccessToken({ refresh_token, device_id }) {
     { user_id: result[0].user_id, device_id },
     PRIVATE_KEY,
     {
-      algorithm: "ES256",
+      algorithm: "RS256",
       expiresIn: "30m",
     }
   );
