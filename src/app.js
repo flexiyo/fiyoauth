@@ -11,7 +11,7 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
 /** List of allowed origins */
-const allowedOrigins = ["flexiyo://fiyo", "https://flexiyo.web.app", "http://localhost:3000"];
+const allowedOrigins = process.env.ALLOWED_ORIGINS;
 
 /** CORS Middleware */
 app.use((req, res, next) => {
